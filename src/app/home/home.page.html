@@ -1,0 +1,136 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      JSON Translator
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-grid>
+    <ion-row>
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <ion-card-header>
+            <ion-segment [(ngModel)]="inputType">
+              <ion-segment-button value="json">
+                <ion-label>JSON</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="text">
+                <ion-label>Text</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+          </ion-card-header>
+          <ion-card-content>
+            <div *ngIf="inputType === 'json'">
+              <div>
+                <label>Upload File</label>
+                <input type="file" (change)="handleFileInput($event)" accept=".json" />
+              </div>
+
+              <ion-item>
+                <ion-label position="stacked">Or Paste JSON</ion-label>
+                <ion-textarea [(ngModel)]="pastedJsonString" rows="5" placeholder="Paste your JSON here..."></ion-textarea>
+              </ion-item>
+
+              <div *ngIf="originalJson">
+                <h3>Original JSON</h3>
+                <pre>{{ originalJson | json }}</pre>
+              </div>
+            </div>
+
+            <div *ngIf="inputType === 'text'">
+              <ion-item>
+                <ion-label position="stacked">Enter Text</ion-label>
+                <ion-textarea [(ngModel)]="inputText" rows="10" placeholder="Enter your English text here..."></ion-textarea>
+              </ion-item>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="12" size-md="6">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>2. Select Languages for Translation</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-button expand="block" (click)="openLanguageSelect()">Select Languages</ion-button>
+            <div class="ion-padding-top">
+              <ion-chip *ngFor="let lang of selectedLanguages">
+                <ion-label>{{ lang.name }}</ion-label>
+                <ion-icon name="close-circle" (click)="removeLanguage(lang)"></ion-icon>
+              </ion-chip>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    
+
+    <ion-row *ngIf="objectKeys(translationErrors).length > 0">
+      <ion-col>
+        <ion-card color="danger">
+          <ion-card-header>
+            <ion-card-title>Translation Errors</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-list>
+              <ion-item *ngFor="let langCode of objectKeys(translationErrors)">
+                <ion-label>
+                  <h3>{{ getLanguageName(langCode) }}</h3>
+                  <p>{{ translationErrors[langCode] }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row *ngIf="inputType === 'json' && translatedJson">
+      <ion-col>
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>3. Translated JSON</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-accordion-group>
+              <ion-accordion *ngFor="let lang of selectedLanguages" [value]="lang.code">
+                <ion-item slot="header" color="light" class="download-section">
+                  <ion-label>{{ lang.name }}</ion-label>
+                  <ion-icon name="download-outline" slot="end" (click)="$event.stopPropagation(); downloadContent(lang.code)"></ion-icon>
+                </ion-item>
+                <div class="ion-padding" slot="content">
+                  <pre>{{ translatedJson[lang.code] | json }}</pre>
+                </div>
+              </ion-accordion>
+            </ion-accordion-group>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row *ngIf="inputType === 'text' && objectKeys(translatedText).length > 0">
+      <ion-col>
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>3. Translated Text</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-list>
+              <ion-item *ngFor="let lang of selectedLanguages">
+                <ion-label>
+                  <h2>{{ lang.name }}</h2>
+                  <p>{{ translatedText[lang.code] }}</p>
+                </ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+  </ion-grid>
+</ion-content>
