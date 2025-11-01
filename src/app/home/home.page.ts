@@ -115,6 +115,35 @@ export class HomePage {
     }
   }
 
+  private flattenJson(obj: any, prefix = ''): Record<string, any> {
+    return Object.keys(obj).reduce((acc: Record<string, any>, key: string) => {
+      const path = prefix ? `${prefix}.${key}` : key;
+      const value = obj[key];
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        Object.assign(acc, this.flattenJson(value, path));
+      } else {
+        acc[path] = value;
+      }
+      return acc;
+    }, {});
+  }
+
+  private unflattenJson(flat: Record<string, any>): any {
+    const result: any = {};
+    for (const path of Object.keys(flat)) {
+      const parts = path.split('.');
+      let current = result;
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (current[parts[i]] === undefined || typeof current[parts[i]] !== 'object') {
+          current[parts[i]] = {};
+        }
+        current = current[parts[i]];
+      }
+      current[parts[parts.length - 1]] = flat[path];
+    }
+    return result;
+  }
+
   translate() {
     this.translatedJson = null;
     this.translatedText = {};
@@ -148,8 +177,9 @@ export class HomePage {
 
     const translationTasks$ = this.selectedLanguages.map(lang => {
       if (this.inputType === 'json') {
-        const keys = Object.keys(this.originalJson);
-        const values = Object.values(this.originalJson);
+        const flat = this.flattenJson(this.originalJson);
+        const keys = Object.keys(flat);
+        const values = Object.values(flat);
 
         const valueTranslationTasks$ = values.map((value: any) => {
           if (typeof value !== 'string' || value.trim() === '') {
@@ -172,11 +202,11 @@ export class HomePage {
 
         return forkJoin(valueTranslationTasks$).pipe(
           map(translatedValues => {
-            const translatedObject: any = {};
+            const translatedFlat: Record<string, any> = {};
             keys.forEach((key, index) => {
-              translatedObject[key] = translatedValues[index];
+              translatedFlat[key] = translatedValues[index];
             });
-            this.translatedJson[lang.code] = translatedObject;
+            this.translatedJson[lang.code] = this.unflattenJson(translatedFlat);
           })
         );
       } else {
